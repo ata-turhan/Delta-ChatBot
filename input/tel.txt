@@ -2258,7 +2258,7 @@
     {
         "id": "6564056",
         "title": "Turkey: SMS Guidelines",
-        "body": "<h1 id=\"h_fc8c3defca\"><b>Turkey: SMS Guidelines</b></h1>\n<p class=\"no-margin\"><b>MCC: </b>286<br><b>Dial Code:</b> 90<br><br>Alphanumeric Sender IDs are supported with registration. Alphanumeric Sender ID registration is required.<br><br>Gambling traffic is not allowed towards Turkey.<br><br>Please make sure to always refer to our <a href=\"https://app.intercom.com/\" target=\"_blank\" class=\"intercom-content-link\">Acceptable Use Policy for Messaging</a>.<br><br>For more information on Alpha Sender ID registration kindly reach out to <a href=\"mailto:alpha_sender_id@telnyx.com\" target=\"_blank\" class=\"intercom-content-link\">alpha_sender_id@telnyx.com</a>.</p>",
+        "body": "<h1 id=\"h_fc8c3defca\"><b>Turkey: SMS Guidelines</b></h1>\n<p class=\"no-margin\"><b>MCC: </b>286<br><b>Dial Code:</b>90<br><br>Alphanumeric Sender IDs are supported with registration. Alphanumeric Sender ID registration is required.<br><br>Gambling traffic is not allowed towards Turkey.<br><br>Please make sure to always refer to our <a href=\"https://app.intercom.com/\" target=\"_blank\" class=\"intercom-content-link\">Acceptable Use Policy for Messaging</a>.<br><br>For more information on Alpha Sender ID registration kindly reach out to <a href=\"mailto:alpha_sender_id@telnyx.com\" target=\"_blank\" class=\"intercom-content-link\">alpha_sender_id@telnyx.com</a>.</p>",
         "url": "https://support.telnyx.com/en/articles/6564056-turkey-sms-guidelines"
     },
     {
