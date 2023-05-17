@@ -23,10 +23,10 @@ def main():
     )
     vector_store = None
 
-    file_path = (
-        "C:/Users/NEO/Desktop/Projects/SimpleChatbot/input/telnyx-doc.json"
-    )
-    loader = TextLoader(file_path, encoding="utf-8")
+    file_path = "input/telnyx-doc.json"
+    main_dir = os.path.dirname(FULL_PATH)
+    FILE_DIR = os.path.join(main_dir, file_path)
+    loader = TextLoader(FILE_DIR, encoding="utf-8")
     documents = loader.load()
     char_text_splitter = MarkdownTextSplitter(
         chunk_size=1024,
