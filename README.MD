@@ -61,5 +61,5 @@ python src/app.py "query (your question)"
 ## Challenges during the development
 
 1. The OPEN-AI token limit was a problem when used with charactertextsplitter. Thus, a markdown text splitter with the appropriate chunk_size parameter is used.
-2: Different chain_type parameters are used in the retrival_qa object. The best chain type is found to be stuff in terms of accuracy.
-Chromadb did not persist at first, but later, I learned about the necessity of the persist method.
+2. Different chain_type parameters are used in the retrival_qa object. The best chain type is found to be stuff in terms of accuracy.
+3. Chromadb did not persist at first, but later, I learned about the necessity of the persist method.
