@@ -6,6 +6,7 @@ from dotenv import find_dotenv, load_dotenv
 from langchain.chains import RetrievalQA
 from langchain.chat_models import ChatOpenAI
 from langchain.document_loaders import TextLoader
+from langchain.prompts import PromptTemplate
 from langchain.text_splitter import MarkdownTextSplitter
 from langchain.vectorstores import Chroma
 
@@ -54,8 +55,28 @@ def main():
         search_type="similarity", search_kwargs={"k": 10}
     )
 
+    prompt_template = """
+    <|SYSTEM|>#
+    - You are a helpful, polite, fact-based agent for answering questions about Telnyx SMS Guidelines Documentation.
+    <|USER|>
+    Please answer the following question using the context provided. If you don't know the answer, just say that "The answer to this question cannot be found in the document". Base your answer on the context below. Say "The answer to this question cannot be found in the document" if the answer does not appear to be in the context below.
+
+    QUESTION: {question}
+    CONTEXT:
+    {context}
+
+    ANSWER: <|ASSISTANT|>
+    """
+    PROMPT = PromptTemplate(
+        template=prompt_template, input_variables=["context", "question"]
+    )
+    chain_type_kwargs = {"prompt": PROMPT}
+
     qa = RetrievalQA.from_chain_type(
-        llm=llm, chain_type="stuff", retriever=retriever
+        llm=llm,
+        chain_type="stuff",
+        retriever=retriever,
+        chain_type_kwargs=chain_type_kwargs,
     )
 
     try:
