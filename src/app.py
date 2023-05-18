@@ -84,7 +84,9 @@ def main():
         print(qa.run(query))
     except Exception as e:
         print("Please provide a valid query.")
+        print("Usage: python app.py <question>")
         print(e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
