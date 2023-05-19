@@ -14,6 +14,7 @@ from langchain.vectorstores import Chroma
 def main():
     load_dotenv(find_dotenv())
     os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+    # embeddings = OpenAIEmbeddings(openai_api_key=os.environ["OPENAI_API_KEY"])
 
     FULL_PATH = os.path.dirname(os.path.abspath(__file__))
     DB_DIR = os.path.join(FULL_PATH, "Vector-DB")
@@ -30,21 +31,23 @@ def main():
     loader = TextLoader(FILE_DIR, encoding="utf-8")
     documents = loader.load()
     char_text_splitter = MarkdownTextSplitter(
-        chunk_size=1024,
-        chunk_overlap=256,
+        chunk_size=2048,
+        chunk_overlap=512,
     )
     texts = char_text_splitter.split_documents(documents)
 
     if not os.path.exists(DB_DIR):
         vector_store = Chroma.from_documents(
             texts,
+            # embeddings,
+            collection_name="Store",
             persist_directory=DB_DIR,
             client_settings=client_settings,
-            collection_name="Store",
         )
         vector_store.persist()
     else:
         vector_store = Chroma(
+            # embedding_function=embeddings,
             collection_name="Store",
             persist_directory=DB_DIR,
             client_settings=client_settings,
@@ -52,12 +55,13 @@ def main():
 
     llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
     retriever = vector_store.as_retriever(
-        search_type="similarity", search_kwargs={"k": 10}
+        search_type="similarity", search_kwargs={"k": 5}
     )
 
     prompt_template = """
     <|SYSTEM|>#
     - You are a helpful, polite, fact-based agent for answering questions about Telnyx SMS Guidelines Documentation.
+    - The user just asked you a question about this documentation. Answer it using only the information contained in the context.
     <|USER|>
     Please answer the following question using the context provided. If you don't know the answer, just say that "The answer to this question cannot be found in the document". Base your answer on the context below. Say "The answer to this question cannot be found in the document" if the answer does not appear to be in the context below.
 
