@@ -12,9 +12,9 @@
 
 <hr>
 
-# Telnyx QA ChatBot
+# Delta ChatBot
 
-This is a chatbot that answers questions based on SMS guidelines documentation from Telnyx. You can use it via the command line.
+This is a chatbot that answers questions based on uploaded documents.
 
 
 ## Table of Contents
@@ -39,13 +39,13 @@ Before setting up the project, ensure that you have the following prerequisites 
 1. Clone the project repository:
 
 ```
-git clone https://github.com/olympian-21/Simple-Chatbot.git
+git clone https://github.com/olympian-21/Delta-Chatbot.git
 ```
 
 2. Navigate to the project directory:
 
 ```
-cd Telnyx-QA-ChatBot
+cd delta-chatbot
 ```
 
 3. Install project dependencies using Poetry:
@@ -68,12 +68,5 @@ poetry shell
 2. Run the project:
 
 ```
-python src/app.py "query (your question)"
+python delta-chatbot/app.py "query (your question)"
 ```
-
-
-## Challenges during the development
-
-1. The OPEN-AI token limit was a problem when used with charactertextsplitter. Thus, a markdown text splitter with the appropriate chunk_size parameter is used.
-2. Different chain_type parameters are used in the retrival_qa object. The best chain type is found to be stuff in terms of accuracy.
-3. Chromadb did not persist at first, but later, I learned about the necessity of the persist method.
