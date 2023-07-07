@@ -13,9 +13,16 @@ from langchain.llms import OpenAI
 from langchain.vectorstores import Chroma
 from PIL import Image
 
+# Storing the chat
+if "user" not in st.session_state:
+    st.session_state.user = []
+if "bot" not in st.session_state:
+    st.session_state.bot = []
+if "openai_api_key" not in st.session_state:
+    st.session_state.openai_api_key = None
 
-def main():
-    os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+def start_chat():
     # Set the title and subtitle of the app
     st.title("🦜🔗 PDF-Chat: Interact with Your PDFs in a Conversational Way")
     st.subheader(
@@ -83,6 +90,44 @@ def main():
             search = store.similarity_search_with_score(prompt)
             # Write out the first
             st.write(search[0][0].page_content)
+
+
+def is_api_key_valid(openai_api_key: str):
+    if openai_api_key is None or not openai_api_key.startswith("sk-"):
+        st.warning("Lütfen geçerli bir OpenAI API Key'i girin!", icon="⚠")
+        return False
+    else:
+        os.environ["OPENAI_API_KEY"] = openai_api_key
+        return True
+
+
+def main():
+    st.set_page_config(
+        page_title="🤖 Delta ChatBot",
+        page_icon="🤖",
+        initial_sidebar_state="expanded",
+        menu_items={
+            "Get Help": "https://github.com/olympian-21",
+            "Report a bug": None,
+            "About": "This is a chat bot to query documents",
+        },
+    )
+
+    st.markdown(
+        "<center><h1>Delta - Document ChatBot</h1></center> <br> <br>",
+        unsafe_allow_html=True,
+    )
+
+    st.sidebar.markdown(
+        "<center><h3>Confiugarations</h3></center> <br> <br>",
+        unsafe_allow_html=True,
+    )
+
+    st.sidebar.text_input("Please enter the OpenAI API Key:", key="openai_api")
+
+    if is_api_key_valid(st.session_state.openai_api):
+        st.sidebar.success("OpenAI API Key was received successfully.")
+        start_chat()
 
 
 if __name__ == "__main__":
