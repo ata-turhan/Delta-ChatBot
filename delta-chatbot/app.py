@@ -11,6 +11,7 @@ from langchain.document_loaders import PyPDFLoader
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.llms import OpenAI
 from langchain.vectorstores import Chroma
+from modules.utils import add_bg_from_local, set_page_config
 from PIL import Image
 
 # Storing the chat
@@ -101,33 +102,53 @@ def is_api_key_valid(openai_api_key: str):
         return True
 
 
-def main():
-    st.set_page_config(
-        page_title="🤖 Delta ChatBot",
-        page_icon="🤖",
-        initial_sidebar_state="expanded",
-        menu_items={
-            "Get Help": "https://github.com/olympian-21",
-            "Report a bug": None,
-            "About": "This is a chat bot to query documents",
-        },
+def show_sidebar():
+    st.sidebar.markdown(
+        "<center><h1>Configurations</h1></center> <br>",
+        unsafe_allow_html=True,
     )
+
+    llm = st.sidebar.selectbox(
+        "Please select a LLM:",
+        [
+            "<Select>",
+            "openai/gpt-3.5-turbo",
+            "google/flan-t5-xxl",
+            "databricks/dolly-v2-3b",
+            "Writer/camel-5b-hf",
+            "Salesforce/xgen-7b-8k-base",
+            "tiiuae/falcon-40b",
+        ],
+    )
+    if llm != "<Select>":
+        st.sidebar.text_input(
+            f"Please enter the {llm} API Key:", key="openai_api"
+        )
+        if is_api_key_valid(st.session_state.openai_api):
+            st.sidebar.success("OpenAI API Key was received successfully.")
+            start_chat()
+
+
+def main():
+    set_page_config()
+
+    background_img_path = os.path.join("static", "background", "Bot.png")
+    sidebar_background_img_path = os.path.join(
+        "static", "background", "Lila Gradient.png"
+    )
+    page_markdown = add_bg_from_local(
+        background_img_path=background_img_path,
+        sidebar_background_img_path=sidebar_background_img_path,
+    )
+    st.markdown(page_markdown, unsafe_allow_html=True)
 
     st.markdown(
-        "<center><h1>Delta - Document ChatBot</h1></center> <br> <br>",
+        """<h1 style='text-align: center; color: black; font-size: 60px;'> 📝 Delta - Document ChatBot </h1>
+        <br>""",
         unsafe_allow_html=True,
     )
 
-    st.sidebar.markdown(
-        "<center><h3>Confiugarations</h3></center> <br> <br>",
-        unsafe_allow_html=True,
-    )
-
-    st.sidebar.text_input("Please enter the OpenAI API Key:", key="openai_api")
-
-    if is_api_key_valid(st.session_state.openai_api):
-        st.sidebar.success("OpenAI API Key was received successfully.")
-        start_chat()
+    show_sidebar()
 
 
 if __name__ == "__main__":
