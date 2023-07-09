@@ -2417,6 +2417,25 @@ files = [
 ]
 
 [[package]]
+name = "pypdf"
+version = "3.12.0"
+description = "A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "pypdf-3.12.0-py3-none-any.whl", hash = "sha256:826ad4681660394d7a5742fe8380168cf13058e27b826b7f5b798e994cb77b38"},
+    {file = "pypdf-3.12.0.tar.gz", hash = "sha256:cebac920db0698369f49c389018858a5436862bf3c45b64b10c55c008878db95"},
+]
+
+[package.extras]
+crypto = ["PyCryptodome"]
+dev = ["black", "flit", "pip-tools", "pre-commit (<2.18.0)", "pytest-cov", "pytest-socket", "wheel"]
+docs = ["myst_parser", "sphinx", "sphinx_rtd_theme"]
+full = ["Pillow", "PyCryptodome"]
+image = ["Pillow"]
+
+[[package]]
 name = "pyrsistent"
 version = "0.19.3"
 description = "Persistent/Functional/Immutable data structures"
@@ -4067,4 +4086,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "279c18059aba92e41c095c1d836bd40546c2d310ca190c3ed751dffe38a0ad45"
+content-hash = "ff31e6e8a07b5f26988994ae540e695f8bb57f883627392e878cbef1850717eb"

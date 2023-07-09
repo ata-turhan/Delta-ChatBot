@@ -1,104 +1,60 @@
 import os
-import tempfile
 
 import streamlit as st
-from langchain.agents.agent_toolkits import (
-    VectorStoreInfo,
-    VectorStoreToolkit,
-    create_vectorstore_agent,
-)
-from langchain.document_loaders import PyPDFLoader
-from langchain.embeddings import OpenAIEmbeddings
+from langchain import HuggingFaceHub, LLMChain, PromptTemplate
 from langchain.llms import OpenAI
-from langchain.vectorstores import Chroma
 from modules.utils import add_bg_from_local, set_page_config
-from PIL import Image
 
 # Storing the chat
 if "user" not in st.session_state:
     st.session_state.user = []
 if "bot" not in st.session_state:
     st.session_state.bot = []
-if "openai_api_key" not in st.session_state:
-    st.session_state.openai_api_key = None
+if "api_key" not in st.session_state:
+    st.session_state.api_key = None
+if "model" not in st.session_state:
+    st.session_state.model = None
 
 
 def start_chat():
-    # Set the title and subtitle of the app
-    st.title("🦜🔗 PDF-Chat: Interact with Your PDFs in a Conversational Way")
-    st.subheader(
-        "Load your PDF, ask questions, and receive answers directly from the document."
-    )
-
-    # Load the image
-    image = Image.open("PDF-Chat App.png")
-    st.image(image)
-
-    # Loading the Pdf file and return a temporary path for it
-    st.subheader("Upload your pdf")
-    uploaded_file = st.file_uploader(
-        "", type=(["pdf", "tsv", "csv", "txt", "tab", "xlsx", "xls"])
-    )
-
-    temp_file_path = os.getcwd()
-    while uploaded_file is None:
-        return
-
-    if uploaded_file is not None:
-        # Save the uploaded file to a temporary location
-        temp_dir = tempfile.TemporaryDirectory()
-        temp_file_path = os.path.join(temp_dir.name, uploaded_file.name)
-        with open(temp_file_path, "wb") as temp_file:
-            temp_file.write(uploaded_file.read())
-
-        st.write("Full path of the uploaded file:", temp_file_path)
-
     # Create instance of OpenAI LLM
-    llm = OpenAI(temperature=0.1, verbose=True)
-    embeddings = OpenAIEmbeddings()
+    if st.session_state.model.startswith("openai"):
+        llm = OpenAI(temperature=0.1, verbose=True)
+    else:
+        llm = HuggingFaceHub(
+            repo_id=st.session_state.model,
+            model_kwargs={
+                "temperature": 0.1,
+                "max_length": 512,
+            },
+        )
+    question = st.text_input("Please write your question:")
 
-    # Create and load PDF Loader
-    loader = PyPDFLoader(temp_file_path)
-    # Split pages from pdf
-    pages = loader.load_and_split()
+    template = """Question: {question}
+    """
 
-    # Load documents into vector database aka ChromaDB
-    store = Chroma.from_documents(pages, embeddings, collection_name="Pdf")
-
-    # Create vectorstore info object
-    vectorstore_info = VectorStoreInfo(
-        name="Pdf",
-        description=" A pdf file to answer your questions",
-        vectorstore=store,
-    )
-    # Convert the document store into a langchain toolkit
-    toolkit = VectorStoreToolkit(vectorstore_info=vectorstore_info)
-
-    # Add the toolkit to an end-to-end LC
-    agent_executor = create_vectorstore_agent(
-        llm=llm, toolkit=toolkit, verbose=True
-    )
-
-    if prompt := st.text_input("Input your prompt here"):
-        # Then pass the prompt to the LLM
-        response = agent_executor.run(prompt)
-        # ...and write it out to the screen
-        st.write(response)
-
-        # With a streamlit expander
-        with st.expander("Document Similarity Search"):
-            # Find the relevant pages
-            search = store.similarity_search_with_score(prompt)
-            # Write out the first
-            st.write(search[0][0].page_content)
+    prompt = PromptTemplate(template=template, input_variables=["question"])
+    llm_chain = LLMChain(prompt=prompt, llm=llm)
+    st.write(llm_chain.run(question))
 
 
-def is_api_key_valid(openai_api_key: str):
-    if openai_api_key is None or not openai_api_key.startswith("sk-"):
-        st.warning("Lütfen geçerli bir OpenAI API Key'i girin!", icon="⚠")
+def is_api_key_valid(model: str, api_key: str):
+    if api_key is None:
+        st.sidebar.warning("Please enter a valid API Key!", icon="⚠")
+        return False
+    elif model == "openai" and not api_key.startswith("sk-"):
+        st.sidebar.warning("Please enter a valid API Key!", icon="⚠")
+        return False
+    elif model == "huggingface" and not api_key.startswith("hf_"):
+        st.sidebar.warning("Please enter a valid API Key!", icon="⚠")
         return False
     else:
-        os.environ["OPENAI_API_KEY"] = openai_api_key
+        key = (
+            "OPENAI_API_KEY"
+            if model == "openai"
+            else "HUGGINGFACEHUB_API_TOKEN"
+        )
+        os.environ[key] = api_key
         return True
 
 
@@ -118,14 +74,17 @@ def show_sidebar():
             "Writer/camel-5b-hf",
             "Salesforce/xgen-7b-8k-base",
             "tiiuae/falcon-40b",
+            "bigscience/bloom",
         ],
     )
+    st.session_state.model = llm
     if llm != "<Select>":
         st.sidebar.text_input(
-            f"Please enter the {llm} API Key:", key="openai_api"
+            f"Please enter the {llm} API Key:", key="api_key"
         )
-        if is_api_key_valid(st.session_state.openai_api):
-            st.sidebar.success("OpenAI API Key was received successfully.")
+        model = "openai" if llm.startswith("openai") else "huggingface"
+        if is_api_key_valid(model, st.session_state.api_key):
+            st.sidebar.success("API Key was received successfully.")
             start_chat()
 
 
