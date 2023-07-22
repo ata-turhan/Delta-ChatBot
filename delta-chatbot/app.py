@@ -13,7 +13,7 @@ from langchain.embeddings import HuggingFaceHubEmbeddings
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
-from langchain.text_splitter import MarkdownTextSplitter
+from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import Chroma
 from modules.utils import add_bg_from_local, set_page_config
 
@@ -47,32 +47,14 @@ def is_api_key_valid(model_host: str, api_key: str):
         return True
 
 
-def create_vector_store(model_host, results):
-    urls = [val["link"] for val in results]
-    loader = WebBaseLoader(urls)
-    documents = loader.load()
-    for doc in documents:
-        doc.metadata = {"url": doc.metadata["source"]}
-
-    if model_host == "openai":
-        char_text_splitter = MarkdownTextSplitter(
-            chunk_size=1024,
-            chunk_overlap=128,
-        )
-    else:
-        char_text_splitter = MarkdownTextSplitter(
-            chunk_size=256,
-            chunk_overlap=32,
-        )
-    texts = char_text_splitter.split_documents(documents)
-
+def create_vector_store_retriever(model_host, chunked_documents):
     embeddings = (
         OpenAIEmbeddings()
         if model_host == "openai"
         else HuggingFaceHubEmbeddings()
     )
-    vector_store = Chroma.from_documents(texts, embeddings)
-    return [vector_store.as_retriever(), urls]
+    vector_store = Chroma.from_documents(chunked_documents, embeddings)
+    return vector_store.as_retriever()
 
 
 def create_llm(model):
@@ -95,24 +77,19 @@ def create_llm(model):
 def create_main_prompt():
     return """
     <|SYSTEM|>#
-    - Eğer sorulan soru doğrudan TOBB ETÜ (TOBB Ekonomi ve Teknoloji Üniversitesi) ile ilgili değilse
-     "Üzgünüm, bu soru TOBB ETÜ ile ilgili olmadığından cevaplayamıyorum. Lütfen başka bir soru sormayı
-      deneyin." diye yanıt vermelisin ve başka herhangi bir şey söylememelisin.
-    - Sen Türkçe konuşan bir botsun. Soru Türkçe ise her zaman Türkçe cevap vermelisin.
-    - If the question is in English, then answer in English. If the question is Turkish, then answer in Turkish.
-    - Sen çok yardımsever, nazik, gerçek dünyaya ait bilgilere dayalı olarak soru cevaplayan bir sohbet botusun.
-    - Cevapların açıklayıcı olmalı. Soru soran kişiye istediği tüm bilgiyi net bir şekilde vermelisin. Gerekirse uzun bir mesaj yazmaktan
-    da çekinme.
-    Yalnızca TOBB ETÜ Üniversitesi ile ilgili sorulara cevap verebilirsin, asla başka bir soruya cevap vermemelisin.
+    You are a bot that lets your user talk to the documents he has uploaded.
+    - Answer using the information in the documents provided.
+    - If the answers are not in the documentation, you should say "Sorry, I could not find the answer to this question
+    in your uploaded files.".
     <|USER|>
-    Şimdi kullanıcı sana bir soru soruyor. Bu soruyu sana verilen bağlam ve sohbet geçmişindeki bilgilerinden faydalanarak
-    açık ve net bir biçimde yanıtla.
+    Now the user asks you a question. Using your knowledge of the context and chat history provided to you, answer this question
+    clearly and precisely.
 
-    SORU: {question}
-    BAĞLAM:
+    QUESTION: {question}
+    CONTEXT:
     {context}
 
-    CEVAP: <|ASSISTANT|>
+    ANSWER: <|ASSISTANT|>
     """
 
 
@@ -134,7 +111,7 @@ def create_retrieval_qa(llm, prompt_template, retriever):
     )
 
 
-def create_temp_files(uploaded_files):
+def prepare_documents(uploaded_files):
     temp_files = []
     temp_dir = tempfile.TemporaryDirectory()
     for uploaded_file in uploaded_files:
@@ -142,20 +119,21 @@ def create_temp_files(uploaded_files):
         with open(temp_file_path, "wb") as temp_file:
             temp_file.write(uploaded_file.read())
             temp_files.append(temp_file_path)
-    return temp_files
 
-
-def load_multiple_documents(files):
     documents = []
-    for file_ in files:
-        if file_.endswith(".pdf"):
-            loader = PyPDFLoader(file_)
-        elif file_.endswith(".doc") or file_.endswith(".docx"):
-            loader = Docx2txtLoader(file_)
-        elif file_.endswith(".txt"):
-            loader = TextLoader(file_)
+    for temp_file in temp_files:
+        if temp_file.endswith(".pdf"):
+            loader = PyPDFLoader(temp_file)
+        elif temp_file.endswith(".doc") or temp_file.endswith(".docx"):
+            loader = Docx2txtLoader(temp_file)
+        elif temp_file.endswith(".txt"):
+            loader = TextLoader(temp_file)
         documents.extend(loader.load())
-    return documents
+
+    character_splitter = CharacterTextSplitter(
+        chunk_size=512, chunk_overlap=32
+    )
+    return character_splitter.split_documents(documents)
 
 
 def main():
@@ -232,6 +210,18 @@ def main():
     if len(uploaded_files) == 0:
         return
 
+    with st.spinner("Documents are being processed"):
+        chunked_documents = prepare_documents(uploaded_files)
+        # chunked_documents = load_multiple_documents_and_split(temp_files)
+        retriever = create_vector_store_retriever(
+            model_host, chunked_documents
+        )
+
+    with st.spinner("ChatBot is being prepared"):
+        llm = create_llm(model)
+        prompt_template = create_main_prompt()
+        qa = create_retrieval_qa(llm, prompt_template, retriever)
+
     for user_message, assistant_message in st.session_state.messages.items():
         with st.chat_message("user", avatar="🧑"):
             st.markdown(user_message)
@@ -257,31 +247,12 @@ def main():
             with st.chat_message("user", avatar="🧑"):
                 st.markdown(user_input)
 
-            with st.spinner("Soru internet üzerinde aranıyor"):
-                query = transform_question(model_host, user_input)
-                query = query.replace('"', "").replace("'", "")
-                results = search_web(query)
-
-            with st.spinner("Toplanan bilgiler derleniyor"):
-                retriever, urls = create_vector_store(model_host, results)
-
-            with st.spinner("Soru cevaplanıyor"):
-                llm = create_llm(model)
-                prompt_template = create_main_prompt()
-                qa = create_retrieval_qa(llm, prompt_template, retriever)
+            with st.spinner("Question is being answered"):
                 response = qa.run(user_input)
 
             with st.chat_message("assistant", avatar="🤖"):
                 message_placeholder = st.empty()
 
-                if not (
-                    response.startswith("Üzgünüm")
-                    or response.startswith("I'm sorry")
-                ):
-                    source_output = " \n \n Soru, şu kaynaklardan yararlanarak cevaplandı: \n \n"
-                    for url in urls:
-                        source_output += url + " \n \n "
-                    response += source_output
                 llm_output = ""
                 for i in range(len(response)):
                     llm_output += response[i]
@@ -300,7 +271,7 @@ def main():
     except Exception as e:
         _, center_err_col, _ = st.columns([1, 8, 1])
         center_err_col.error(
-            "\n Sorunuz cevaplanamadı. Lütfen başka bir soru sormayı deneyin. Teşekkürler ;]"
+            "\n Your question could not be answered. Please try to ask another question. Thank you ;]"
         )
         print(f"An error occurred: {type(e).__name__}")
         print(e)
