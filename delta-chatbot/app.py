@@ -22,6 +22,8 @@ STREAMING_INTERVAL = 0.01
 
 if "messages" not in st.session_state:
     st.session_state.messages = OrderedDict()
+if "chain" not in st.session_state:
+    st.session_state.chain = None
 
 
 def is_api_key_valid(model_host: str, api_key: str):
@@ -54,7 +56,7 @@ def create_vector_store_retriever(model_host, chunked_documents):
         else HuggingFaceHubEmbeddings()
     )
     vector_store = Chroma.from_documents(chunked_documents, embeddings)
-    return vector_store.as_retriever()
+    return vector_store.as_retriever(search_kwargs={"k": 5})
 
 
 def create_llm(model):
@@ -99,7 +101,10 @@ def create_retrieval_qa(llm, prompt_template, retriever):
     )
     combine_docs_chain_kwargs = {"prompt": PROMPT}
     memory = ConversationBufferMemory(
-        memory_key="chat_history", return_messages=True
+        memory_key="chat_history",
+        input_key="question",
+        output_key="answer",
+        return_messages=True,
     )
 
     return ConversationalRetrievalChain.from_llm(
@@ -108,6 +113,7 @@ def create_retrieval_qa(llm, prompt_template, retriever):
         retriever=retriever,
         combine_docs_chain_kwargs=combine_docs_chain_kwargs,
         memory=memory,
+        return_source_documents=True,
     )
 
 
@@ -131,9 +137,14 @@ def prepare_documents(uploaded_files):
         documents.extend(loader.load())
 
     character_splitter = CharacterTextSplitter(
-        chunk_size=512, chunk_overlap=32
+        chunk_size=256, chunk_overlap=32
     )
     return character_splitter.split_documents(documents)
+
+
+def clean_chain():
+    st.session_state.chain = None
+    return
 
 
 def main():
@@ -206,21 +217,25 @@ def main():
         "You can upload any number of documents you want to chat with",
         type=(["pdf", "tsv", "csv", "txt", "tab", "xlsx", "xls"]),
         accept_multiple_files=True,
+        on_change=clean_chain,
     )
     if len(uploaded_files) == 0:
         return
 
-    with st.spinner("Documents are being processed"):
-        chunked_documents = prepare_documents(uploaded_files)
-        # chunked_documents = load_multiple_documents_and_split(temp_files)
-        retriever = create_vector_store_retriever(
-            model_host, chunked_documents
-        )
+    if not st.session_state.chain:
+        with st.spinner("Documents are being processed"):
+            chunked_documents = prepare_documents(uploaded_files)
+            # chunked_documents = load_multiple_documents_and_split(temp_files)
+            retriever = create_vector_store_retriever(
+                model_host, chunked_documents
+            )
 
-    with st.spinner("ChatBot is being prepared"):
-        llm = create_llm(model)
-        prompt_template = create_main_prompt()
-        qa = create_retrieval_qa(llm, prompt_template, retriever)
+        with st.spinner("ChatBot is being prepared"):
+            llm = create_llm(model)
+            prompt_template = create_main_prompt()
+            st.session_state.chain = create_retrieval_qa(
+                llm, prompt_template, retriever
+            )
 
     for user_message, assistant_message in st.session_state.messages.items():
         with st.chat_message("user", avatar="🧑"):
@@ -248,7 +263,8 @@ def main():
                 st.markdown(user_input)
 
             with st.spinner("Question is being answered"):
-                response = qa.run(user_input)
+                result = st.session_state.chain({"question": user_input})
+                response = result["answer"]
 
             with st.chat_message("assistant", avatar="🤖"):
                 message_placeholder = st.empty()
@@ -259,10 +275,18 @@ def main():
                     message_placeholder.write(f"{llm_output}▌")
                     time.sleep(STREAMING_INTERVAL)
                 message_placeholder.write(llm_output)
-                # sound_file = BytesIO()
-                # tts = gTTS(llm_output, lang="tr")
-                # tts.write_to_fp(sound_file)
-                # st.audio(sound_file)
+                with st.expander(label="Click to see source documents"):
+                    sources = "".join(
+                        f"{str(idx + 1)} - {source.page_content}<hr> <br>"
+                        for idx, source in enumerate(
+                            result["source_documents"]
+                        )
+                    )
+                    st.markdown(sources)
+                    # sound_file = BytesIO()
+                    # tts = gTTS(llm_output, lang="tr")
+                    # tts.write_to_fp(sound_file)
+                    # st.audio(sound_file)
 
             if user_input not in st.session_state.messages:
                 assistant_message = llm_output
