@@ -68,5 +68,31 @@ poetry shell
 2. Run the project:
 
 ```
-python delta-chatbot/app.py "query (your question)"
+streamlit run "delta-chatbot/app.py"
 ```
+
+## Contributing
+
+If you would like to contribute to this project, follow the guidelines below:
+
+1. Fork the repository and clone it locally.
+
+2. Create a new branch for your feature or bug fix:
+   ```
+   git checkout -b feature/your-feature
+   ```
+
+3. Make your changes and commit them with descriptive commit messages.
+
+4. Push your changes to your forked repository:
+   ```
+   git push origin feature/your-feature
+   ```
+
+5. Open a pull request in the original repository, describing your changes in detail.
+
+## License
+
+GPL v3
+
+---
