@@ -160,6 +160,10 @@ def main():
     )
     st.markdown(page_markdown, unsafe_allow_html=True)
 
+    style_path = os.path.join("static", "style.css")
+    with open(style_path) as s:
+        st.markdown(f"<style>{s.read()}</style>", unsafe_allow_html=True)
+
     st.markdown(
         """<h1 style='text-align: center; color: black; font-size: 60px;'>
          📝 Delta - Document ChatBot
@@ -194,7 +198,7 @@ def main():
     )
     if model == "<Seçiniz>":
         st.sidebar.warning("Lütfen bir model seçin.")
-        _, center_war_col, _ = st.columns([2, 5, 1])
+        _, center_war_col, _ = st.columns([3, 5, 3])
         center_war_col.warning(
             "Lütfen sol taraftaki panelden bot için gerekli ayarlamaları yapın."
         )
@@ -207,7 +211,7 @@ def main():
         if is_api_key_valid(model_host, api_key):
             st.sidebar.success("API keyi başarıyla alındı.")
         else:
-            _, center_war_col, _ = st.columns([2, 5, 1])
+            _, center_war_col, _ = st.columns([3, 5, 3])
             center_war_col.warning(
                 "Lütfen sol taraftaki panelden bot için gerekli ayarlamaları yapın."
             )
