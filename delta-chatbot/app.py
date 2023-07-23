@@ -28,16 +28,16 @@ if "chain" not in st.session_state:
 
 def is_api_key_valid(model_host: str, api_key: str):
     if api_key is None:
-        st.sidebar.warning("Lütfen geçerli bir API keyi girin!", icon="⚠")
+        st.sidebar.warning(
+            f"Please enter a valid {model_host.title()} API Key!", icon="⚠"
+        )
         return False
     elif model_host == "openai" and not api_key.startswith("sk-"):
-        st.sidebar.warning(
-            "Lütfen geçerli bir OpenAI API keyi girin!", icon="⚠"
-        )
+        st.sidebar.warning("Please enter a valid OpenAI API Key!", icon="⚠")
         return False
     elif model_host == "huggingface" and not api_key.startswith("hf_"):
         st.sidebar.warning(
-            "Lütfen geçerli bir HuggingFace API keyi girin!", icon="⚠"
+            "Please enter a valid HuggingFace API Key!", icon="⚠"
         )
         return False
     else:
@@ -80,8 +80,8 @@ def create_main_prompt():
     return """
     <|SYSTEM|>#
     You are a bot that lets your user talk to the documents he has uploaded.
-    - Answer using the information in the documents provided.
-    - If the answers are not in the documentation, you should say "Sorry, I could not find the answer to this question
+    - Answer using the information in the documents provided and your chat history.
+    - If the answers are not in the documentation and your chat history, you should say "Sorry, I could not find the answer to this question
     in your uploaded files.".
     <|USER|>
     Now the user asks you a question. Using your knowledge of the context and chat history provided to you, answer this question
@@ -179,14 +179,14 @@ def main():
     )
 
     st.sidebar.markdown(
-        "<center><h1>Sohbet Botu Ayarları</h1></center> <br>",
+        "<center><h1>ChatBot Configurations</h1></center> <br>",
         unsafe_allow_html=True,
     )
 
     model = st.sidebar.selectbox(
-        "Lütfen bir LLM seçin",
+        "Choose a LLM",
         [
-            "<Seçiniz>",
+            "<Select>",
             "openai/gpt-3.5-turbo",
             "google/flan-t5-xxl",
             "databricks/dolly-v2-3b",
@@ -196,24 +196,24 @@ def main():
             "bigscience/bloom",
         ],
     )
-    if model == "<Seçiniz>":
-        st.sidebar.warning("Lütfen bir model seçin.")
+    if model == "<Select>":
+        st.sidebar.warning("Choose a model")
         _, center_war_col, _ = st.columns([3, 5, 3])
         center_war_col.warning(
-            "Lütfen sol taraftaki panelden bot için gerekli ayarlamaları yapın."
+            "Please make the necessary configurations for the ChatBot from the left side panel."
         )
         return
     else:
         api_key = st.sidebar.text_input(
-            f"Lütfen {model} API keyini girin",
+            f"Enter {model} API key",
         )
         model_host = "openai" if model.startswith("openai") else "huggingface"
         if is_api_key_valid(model_host, api_key):
-            st.sidebar.success("API keyi başarıyla alındı.")
+            st.sidebar.success("API key was received successfully")
         else:
             _, center_war_col, _ = st.columns([3, 5, 3])
             center_war_col.warning(
-                "Lütfen sol taraftaki panelden bot için gerekli ayarlamaları yapın."
+                "Please make the necessary configurations for the ChatBot from the left side panel."
             )
             return
 
@@ -253,7 +253,7 @@ def main():
             # st.audio(sound_file)
 
     text_input = st.chat_input(
-        placeholder="Yazarak sorun ✍️",
+        placeholder="Chat by typing ✍️",
         key="text_box",
         max_chars=100,
     )
@@ -279,14 +279,14 @@ def main():
                     message_placeholder.write(f"{llm_output}▌")
                     time.sleep(STREAMING_INTERVAL)
                 message_placeholder.write(llm_output)
-                with st.expander(label="Click to see source documents"):
+                with st.expander(label="Click to see the source documents"):
                     sources = "".join(
-                        f"{str(idx + 1)} - {source.page_content}<hr> <br>"
+                        f"{str(idx + 1)} - {source.page_content}<hr>"
                         for idx, source in enumerate(
                             result["source_documents"]
                         )
                     )
-                    st.markdown(sources)
+                    st.markdown(sources, unsafe_allow_html=True)
                     # sound_file = BytesIO()
                     # tts = gTTS(llm_output, lang="tr")
                     # tts.write_to_fp(sound_file)
@@ -303,6 +303,7 @@ def main():
         )
         print(f"An error occurred: {type(e).__name__}")
         print(e)
+        print("-------------------")
 
 
 if __name__ == "__main__":
