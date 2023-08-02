@@ -27,6 +27,16 @@ if "chain" not in st.session_state:
 
 
 def is_api_key_valid(model_host: str, api_key: str):
+    """
+    Check if the provided API key is valid for the specified model host.
+
+    Parameters:
+        model_host (str): The name of the model host. Possible values are "openai" or "huggingface".
+        api_key (str): The API key to be validated.
+
+    Returns:
+        bool: True if the API key is valid for the specified model host; False otherwise.
+    """
     if api_key is None:
         st.sidebar.warning(
             f"Please enter a valid {model_host.title()} API Key!", icon="⚠"
@@ -50,6 +60,21 @@ def is_api_key_valid(model_host: str, api_key: str):
 
 
 def create_vector_store_retriever(model_host, chunked_documents):
+    """
+    Create a vector store retriever for the given model host and chunked documents.
+
+    Parameters:
+        model_host (str): The model host for vector embeddings. Choose between "openai"
+                          for OpenAI Embeddings or "huggingface" for Hugging Face Hub
+                          Embeddings.
+        chunked_documents (list): A list of text chunks obtained from documents. Each
+                                  chunk should be a string representation of a document's
+                                  part.
+
+    Returns:
+        vector_store.retriever: A retriever object capable of performing document retrieval
+                                using vector embeddings.
+    """
     embeddings = (
         OpenAIEmbeddings()
         if model_host == "openai"
@@ -60,6 +85,15 @@ def create_vector_store_retriever(model_host, chunked_documents):
 
 
 def create_llm(model):
+    """
+    Create a language model (LLM) for chat-based applications based on the specified model.
+
+    Parameters:
+        model (str): The model name or repository ID of the language model to be used.
+
+    Returns:
+        Union[ChatOpenAI, HuggingFaceHub]: A language model instance suitable for chat-based applications.
+    """
     return (
         ChatOpenAI(
             model_name=model.split("/")[1],
@@ -77,6 +111,12 @@ def create_llm(model):
 
 
 def create_main_prompt():
+    """
+    Create the main prompt for the chatbot to respond to user queries about TOBB ETÜ (TOBB University).
+
+    Returns:
+        str: The main prompt template for the chatbot.
+    """
     return """
     <|SYSTEM|>#
     You are a bot that lets your user talk to the documents he has uploaded.
@@ -96,6 +136,18 @@ def create_main_prompt():
 
 
 def create_retrieval_qa(llm, prompt_template, retriever):
+    """
+    Create a Conversational Retrieval Chain for question-answering based on the provided components.
+
+    Parameters:
+        llm (Union[ChatOpenAI, HuggingFaceHub]): The language model used for conversational responses.
+        prompt_template (str): The main prompt template for the chatbot to respond to user queries.
+        retriever (vector_store.retriever.Retriever): The retriever object for document retrieval.
+
+    Returns:
+        langchain.ConversationalRetrievalChain: A Conversational Retrieval Chain for question-answering.
+
+    """
     PROMPT = PromptTemplate(
         template=prompt_template, input_variables=["context", "question"]
     )
@@ -118,6 +170,15 @@ def create_retrieval_qa(llm, prompt_template, retriever):
 
 
 def prepare_documents(uploaded_files):
+    """
+    Prepare and process documents from a list of uploaded files.
+
+    Parameters:
+        uploaded_files (list): A list of uploaded files to be processed.
+
+    Returns:
+        list: A list of text chunks obtained from the uploaded files.
+    """
     temp_files = []
     temp_dir = tempfile.TemporaryDirectory()
     for uploaded_file in uploaded_files:
