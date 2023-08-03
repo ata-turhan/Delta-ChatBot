@@ -26,7 +26,7 @@ if "chain" not in st.session_state:
     st.session_state.chain = None
 
 
-def is_api_key_valid(model_host: str, api_key: str):
+def is_api_key_valid(model_host: str, api_key: str) -> bool:
     """
     Check if the provided API key is valid for the specified model host.
 
@@ -59,7 +59,7 @@ def is_api_key_valid(model_host: str, api_key: str):
         return True
 
 
-def create_vector_store_retriever(model_host, chunked_documents):
+def create_vector_store_retriever(model_host, chunked_documents) -> Chroma:
     """
     Create a vector store retriever for the given model host and chunked documents.
 
@@ -84,7 +84,7 @@ def create_vector_store_retriever(model_host, chunked_documents):
     return vector_store.as_retriever(search_kwargs={"k": 5})
 
 
-def create_llm(model):
+def create_llm(model) -> ChatOpenAI | HuggingFaceHub:
     """
     Create a language model (LLM) for chat-based applications based on the specified model.
 
@@ -110,7 +110,7 @@ def create_llm(model):
     )
 
 
-def create_main_prompt():
+def create_main_prompt() -> str:
     """
     Create the main prompt for the chatbot to respond to user queries about TOBB ETÜ (TOBB University).
 
@@ -135,7 +135,9 @@ def create_main_prompt():
     """
 
 
-def create_retrieval_qa(llm, prompt_template, retriever):
+def create_retrieval_qa(
+    llm, prompt_template, retriever
+) -> ConversationalRetrievalChain:
     """
     Create a Conversational Retrieval Chain for question-answering based on the provided components.
 
@@ -249,7 +251,7 @@ def main():
         [
             "<Select>",
             "openai/gpt-3.5-turbo",
-            "google/flan-t5-xxl",
+            "meta-llama/Llama-2-70b-chat-hf " "google/flan-t5-xxl",
             "databricks/dolly-v2-3b",
             "Writer/camel-5b-hf",
             "Salesforce/xgen-7b-8k-base",
