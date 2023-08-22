@@ -251,7 +251,8 @@ def main():
         [
             "<Select>",
             "openai/gpt-3.5-turbo",
-            "meta-llama/Llama-2-70b-chat-hf " "google/flan-t5-xxl",
+            "meta-llama/Llama-2-70b-chat-hf",
+            "google/flan-t5-xxl",
             "databricks/dolly-v2-3b",
             "Writer/camel-5b-hf",
             "Salesforce/xgen-7b-8k-base",
