@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "delta-chatbot"
+version = "0.1.0"
+description = "a chatbot to chat with documents"
+authors = ["olympian21 <ataturhan21@gmail.com>"]
+license = "GPLv3"
+readme = "README.md"
+packages = [{include = "delta_chatbot"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+streamlit = "1.24.0"
+langchain = "^0.0.239"
+openai = "^0.27.8"
+chromadb = "^0.4.2"
+pypdf = "^3.12.2"
+unstructured = "^0.8.1"
+tiktoken = "^0.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.3.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
